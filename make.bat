@@ -15,6 +15,8 @@ if not %errorlevel% == 0 pause && exit
 python add_asm_options.py temp1.asm %project_name%.asm +bin +tap +hob org=#6000 project_name=%project_name% device=zxspectrum48
 if not %errorlevel% == 0 pause && exit
 
-%asm_path%\sjasmplus.exe --lst=example.lst --lstlab example.asm
-if %errorlevel% == 0 %unreal_path%\unreal.exe %project_name%.$c && exit
+%asm_path%\sjasmplus.exe --lst=example.lst --lstlab %project_name.asm
+if not %errorlevel% == 0 pause && exit
+
+unreal_path%\unreal.exe %project_name%.$c && exit
 pause
