@@ -60,7 +60,8 @@ def write_save_project_options(lines, options):
     beg_len = ', StartOfProg, EndOfProg - StartOfProg\n'
     prj = '"' + options.project_name
     dct = {'out_hob': '    SAVEHOB ' + prj + '.$c", ' + prj + '.C"' + beg_len,
-           'out_tap': '    SAVETAP ' + prj + '.tap"' + ', CODE, ' + prj +
+           'out_tap': '    EMPTYTAP ' + prj + '_c.tap"\n' +
+           '    SAVETAP ' + prj + '_c.tap"' + ', CODE, ' + prj +
            '"' + beg_len,
            'out_bin': '    SAVEBIN ' + prj + '.bin"' + beg_len}
     for opt_name in dct:
