@@ -10,6 +10,7 @@ python add_asm_options.py temp1.asm $project_name.asm +bin +tap +hob org=#6000 p
 python optimizer.py temp0.asm temp1.asm
 $asm_path/sjasmplus --lst=$project_name.lst --lstlab $project_name.asm
 cat boot.tap $project_name\_c.tap > $project_name.tap
+rm $project_name\_c.tap
 python change_prog_name_in_tap.py $project_name.tap $project_name
 cur_dir=$PWD
 cd $unreal_path

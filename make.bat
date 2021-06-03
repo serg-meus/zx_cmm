@@ -19,6 +19,7 @@ if not %errorlevel% == 0 pause && exit
 if not %errorlevel% == 0 pause && exit
 
 type boot.tap %project_name%_c.tap > %project_name%.tap
+del %project_name%_c.tap
 
 python change_prog_name_in_tap.py %project_name%.tap %project_name%
 
