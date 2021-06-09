@@ -2,6 +2,7 @@ set project_name=example
 set cmm_path=e:\sft\cmm_last\build
 set asm_path=e:\sft\sjasmplus-1.18.2.win
 set unreal_path=e:\sft\US0.39.0
+set zmakebas_path=e:\sft\zmakebas
 
 python preprocessor.py %project_name%.c temp0.c
 if not %errorlevel% == 0 pause && exit
@@ -18,10 +19,10 @@ if not %errorlevel% == 0 pause && exit
 %asm_path%\sjasmplus.exe --lst=%project_name%.lst --lstlab %project_name%.asm
 if not %errorlevel% == 0 pause && exit
 
+%zmakebas_path%\zmakebas.exe -a 10 -o boot.tap -n %project_name% %project_name%.bas
+
 type boot.tap %project_name%_c.tap > %project_name%.tap
 del %project_name%_c.tap
-
-python change_prog_name_in_tap.py %project_name%.tap %project_name%
 
 %unreal_path%\unreal.exe %project_name%.tap && exit
 pause
