@@ -13,10 +13,10 @@ if not %errorlevel% == 0 pause && exit
 python optimizer.py temp0.asm temp1.asm
 if not %errorlevel% == 0 pause && exit
 
-python add_asm_options.py temp1.asm %project_name%.asm +bin +tap +hob org=#6000 project_name=%project_name% device=zxspectrum48
+python add_asm_options.py temp1.asm temp2.asm +bin +tap +hob org=#6000 project_name=%project_name% device=zxspectrum48
 if not %errorlevel% == 0 pause && exit
 
-%asm_path%\sjasmplus.exe --lst=%project_name%.lst --lstlab %project_name%.asm
+%asm_path%\sjasmplus.exe --lst=%project_name%.lst --lstlab temp2.asm
 if not %errorlevel% == 0 pause && exit
 
 %zmakebas_path%\zmakebas.exe -a 10 -o boot.tap -n %project_name% %project_name%.bas

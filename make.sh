@@ -7,9 +7,8 @@ zmakebas_path=~/src/zmakebas
 python preprocessor.py $project_name.c temp0.c
 $cmm_path/cmm temp0.asm temp0.c
 python optimizer.py temp0.asm temp1.asm
-python add_asm_options.py temp1.asm $project_name.asm +bin +tap +hob org=#6000 project_name=$project_name device=zxspectrum48
-python optimizer.py temp0.asm temp1.asm
-$asm_path/sjasmplus --lst=$project_name.lst --lstlab $project_name.asm
+python add_asm_options.py temp1.asm temp2.asm +bin +tap +hob org=#6000 project_name=$project_name device=zxspectrum48
+$asm_path/sjasmplus --lst=$project_name.lst --lstlab temp2.asm
 $zmakebas_path/zmakebas -a 10 -o boot.tap -n $project_name $project_name.bas
 cat boot.tap $project_name\_c.tap > $project_name.tap
 rm $project_name\_c.tap

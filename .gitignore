@@ -1,0 +1,7 @@
+__pycache__/
+temp*
+*.tap
+*.trd
+*.bin
+*.$c
+*.lst
