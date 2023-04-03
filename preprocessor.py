@@ -2,6 +2,8 @@
 
 from sys import argv
 
+flags_inv = {'z': 'nz', 'nz': 'z', 'c': 'nc', 'nc': 'c', 'p': 'm', 'm': 'p',
+             'pe': 'po', 'po': 'pe'}
 
 def process_file(in_fname, out_fname, function):
     with open(in_fname) as in_file:
@@ -24,10 +26,26 @@ def write_out_file(lines, out_file):
 
 
 def preprocessor(lines):
+    lines = make_includes(lines)
     macro_data = collect_macrofunctions(lines)
     delete_definitions(lines)
     make_replaces(lines, macro_data)
+    process_bool_functions(lines)
     return lines
+
+
+def make_includes(lines):
+    new_lines = []
+    for line in lines:
+        if line.lstrip().startswith('#include'):
+            fname = line.split('"')[1]
+            with open(fname) as file:
+                add_lines = read_lines(file)
+                for add_line in add_lines:
+                    new_lines.append(add_line)
+        else:
+            new_lines.append(line)
+    return new_lines
 
 
 class macro_params:
@@ -98,7 +116,7 @@ def get_args_and_values(line):
     for raw_arg in raw_arg_list:
         ans.append([x.strip() for x in raw_arg.partition('=')[::2]])
     ans = tuple(map(list, zip(*ans)))  # transpose list of lists
-    return ans[0], ans[1]
+    return ans[0] if ans[0] != [''] else [], ans[1] if ans[1] != [''] else []
 
 
 def fill_macro_body(line, macro):
@@ -125,10 +143,10 @@ def replace_in_line(tokens, macro):
     return ''.join(tokens)
 
 
-def get_new_body(macro, given_tokens):
+def get_new_body(macro, tokens):
     if not macro.arg_names:
         return macro.body
-    update_arg_values(given_tokens, macro)
+    update_arg_values(tokens, macro)
     body_tokens = split_str(macro.body)
     return replace_tokens(macro, body_tokens)
 
@@ -201,6 +219,78 @@ def partition_str(line, separators):
             if char == sep:
                 return (line[:i], line[i], line[i+1:])
     return (line, None, None)
+
+
+def process_bool_functions(lines):
+    foo_data = collect_func_data(lines)
+    replace_bool_func_ifs(lines, foo_data)
+    replace_bool_with_void(lines)
+    delete_bool_returns(lines)
+
+
+def collect_func_data(lines):
+    ans = {}
+    for num, line in enumerate(lines):
+        splt = line.split()
+        if splt == [] or splt[0] not in ('void', 'bool'):
+            continue
+        return_type = '' if splt == 'void' else get_return_type(lines, num)
+        ans[splt[1].split('(')[0]] = (splt[0], return_type)
+    return ans
+
+
+def get_return_type(lines, first_line_num):
+    ans = ''
+    last_num = last_line_num(lines, first_line_num)
+    for i in range(last_num, first_line_num, -1):
+        splt = lines[i].split()
+        if splt[0] == 'return':
+            ans = splt[1].split(';')[0]
+    return ans
+
+
+def last_line_num(lines, first_line_num):
+    brace_level = 0
+    for num, line in enumerate(lines[first_line_num::]):
+        for char in line:
+            if char == '{':
+                brace_level += 1
+            elif char == '}' and brace_level == 1:
+                break
+            elif char == '}':
+                brace_level -= 1
+        if char == '}' and brace_level == 1:
+            break
+    return num + first_line_num
+
+
+def replace_bool_func_ifs(lines, foo_data):
+    for num, line in enumerate(lines):
+        if line.split() != [] and line.split()[0].startswith('if'):
+            foo_name = line.split('(')[1].lstrip('!')
+            if foo_name in foo_data:
+                n_spaces = len(line) - len(line.lstrip()) if num > 0 else 0
+                foo_call = line.split('(', 1)[1][:-2].lstrip('!')
+                reverse = line.split('(')[1].startswith('!')
+                flag = foo_data[foo_name][1]
+                if reverse:
+                    flag = flags_inv[flag]
+                lines[num] = ' '*n_spaces + foo_call + ';\n' + ' '*n_spaces + \
+                    'if(flag_' + flag + ')\n'
+
+
+def replace_bool_with_void(lines):
+    for num, line in enumerate(lines):
+        if line.startswith('bool'):
+            lines[num] = 'void' + line[4:]
+
+
+def delete_bool_returns(lines):
+    for num, line in enumerate(lines):
+        splt = line.split()
+        if len(splt) > 1 and splt[0] == 'return' and \
+                splt[1].split(';')[0] in flags_inv:
+            lines[num] = '\n'
 
 
 if __name__ == '__main__':

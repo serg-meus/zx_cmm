@@ -3,8 +3,7 @@
 #define COLOR(ink, paper, bright=0, flash=0) \
 [ink + 8*paper + 64*bright + 128*flash]
 
-#enum(BLACK = 0, BLUE, RED, MAGENTA, \
-GREEN, CYAN, YELLOW, WHITE)
+#enum(BLACK = 0, BLUE, RED, MAGENTA, GREEN, CYAN, YELLOW, WHITE)
 
 void main()
 {

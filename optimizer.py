@@ -4,17 +4,21 @@ from sys import argv
 from re import sub
 from preprocessor import process_file
 
+auto_replace_jp_to_jr = True
 
 def optimize_z80_asm(lines):
     lines = strip_comments(lines)
     delete_unused_functions(lines)
+    delete_unused_functions(lines)
     auto_inline(lines)
+    optimize_jumps(lines)
     lines = replace_instructions(lines)
     return lines
 
 
 def auto_inline(lines):
     label_data = collect_calls_data(lines)
+    label_data = filter_condition_calls(lines, label_data)
     find_functions_to_inline(label_data)
     replace_calls(lines, label_data)
 
@@ -30,10 +34,11 @@ def collect_calls_data(lines):
 def update_label_data(label_data, splited_line):
     if splited_line[0] != 'call':
         return
-    if splited_line[1] in label_data:
-        label_data[splited_line[1]][0] += 1
+    ix = 1 if ',' not in splited_line[1] else 2
+    if splited_line[ix] in label_data:
+        label_data[splited_line[ix]][0] += 1
     else:
-        label_data[splited_line[1]] = [1, 0]  # num of occurences, len of func
+        label_data[splited_line[ix]] = [1, 0]  # num of occurences, len of func
 
 
 def find_functions_to_inline(label_data):
@@ -103,7 +108,7 @@ def delete_function(lines, label):
         if state == 0 and line.startswith(label + ':'):
             state = 1
             lines_to_delete.append(i)
-        elif state == 1 and line.split()[0] != 'ret':
+        elif state == 1 and line.strip() != 'ret':
             lines_to_delete.append(i)
         elif state == 1:
             lines_to_delete.append(i)
@@ -152,15 +157,61 @@ def is_auto_label(line):
     return (line[0] == 'l' and line[1:-2].isnumeric()) or line == 'main:\n'
 
 
+def filter_condition_calls(lines, label_data):
+    new_label_data = {}
+    for label in label_data:
+        for line in lines:
+            splt = line.split()
+            if len(splt) > 1 and splt[0] == 'call' and splt[1] == label:
+                new_label_data[label] = label_data[label]
+                break
+    if len(label_data) != len(new_label_data):
+        print('Optimizer warning: some functions were not inlined')
+    return new_label_data
+
+
+def optimize_jumps(lines):
+    repl = {'z,': 'nz,', 'nz,': 'z,', 'c,': 'nc,', 'nc,': 'c,'}
+    lines_to_delete = []
+    for i, line in enumerate(lines[:-2]):
+        cur = line.split()
+        if cur[0] == 'jp' and len(cur) == 3 and cur[1] in repl:
+            nxt = lines[i + 1].split()
+            if nxt[0] == 'jp' and len(nxt) == 2 and \
+                    lines[i + 2].startswith(cur[2]):
+                lines_to_delete.append(i + 1)
+                cur[1] = repl[cur[1]]
+                cur[2] = nxt[1]
+                lines[i] = '    ' + ' '.join(cur) + '\n'
+    for i in sorted(lines_to_delete, reverse=True):
+        del(lines[i])
+    replace_jr_to_jp(lines, repl)
+
+
+def replace_jr_to_jp(lines, repl):
+    if not auto_replace_jp_to_jr:
+        return
+    for i, line in enumerate(lines):
+        splt = line.split()
+        if splt[0] != 'jp':
+            continue
+        if len(splt) == 3 and splt[1] not in repl:
+            continue
+        for j in range(1, 30):
+            if (i + j < len(lines) and lines[i + j].startswith(splt[-1])) or \
+                    (j < i and lines[i - j].startswith(splt[-1])):
+                lines[i] = '    jr ' + ' '.join(splt[1:]) + '\n'
+
 def replace_instructions(lines):
     replaces = {r'ld\s+a,\s+0': 'sub  a',
                 r'dec\s+b\n\s+j[rp]\s+nz,\s+(\w+)': r'djnz \1',
                 r'call\s+(\w+)\n\s+ret': r'jp  \1',
-                r'\s+jp\s+(\w+)\n\1:': r'\n\1:',
-                r'jp\s+(l\d+)': r'IF \1 - $ < 127\n        jr \1\n' +
-                r'    ELSE\n        jp \1\n    ENDIF',
-                r'jp\s+([n]?[zc],\s+)(l\d+)': r'IF \2 - $ < 127\n' +
-                r'        jr \1\2\n    ELSE\n        jp \1\2\n    ENDIF'}
+                r'\s+jp\s+(\w+)\n\1:': r'\n\1:'}
+    if auto_replace_jp_to_jr:
+        replaces[r'jp\s+(l\d+)'] = r'IF \1 - $ < 127\n        jr \1\n' + \
+            r'    ELSE\n        jp \1\n    ENDIF'
+        replaces[r'jp\s+([n]?[zc],\s+)(l\d+)'] = r'IF \2 - $ < 127\n' + \
+            r'        jr \1\2\n    ELSE\n        jp \1\2\n    ENDIF'
     text = connect_lines(lines)
     for replace in replaces:
         text = sub(replace, replaces[replace], text)
