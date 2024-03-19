@@ -31,7 +31,125 @@ def preprocessor(lines):
     delete_definitions(lines)
     make_replaces(lines, macro_data)
     process_bool_functions(lines)
+    lines = process_for_loops(lines)
     return lines
+
+
+def process_for_loops(lines):
+    for n in range(42):  # max loop nesting
+        new_lines = process_for_loop(lines)
+        if hash(tuple(new_lines)) == hash(tuple(lines)):
+            break
+        lines = new_lines
+    return lines
+
+
+def process_for_loop(lines):
+    pair = {'a': 'a', 'b': 'bc', 'c': 'bc', 'd': 'de', 'e': 'de', 'h': 'hl',
+            'l': 'hl', 'ixl': 'ix', 'ixh': 'ix', 'iyl': 'iy', 'iyh': 'iy',
+            'bc': 'bc', 'de': 'de', 'hl': 'hl', 'ix': 'ix', 'iy': 'iy'}
+    state = bracket_level = prev_level = from_val = to_val = step = 0
+    reg = ''
+    ans = []
+    for line in lines:
+        bracket_level = update_bracket_level(bracket_level, line, '{}')
+        if state == 0 and line.lstrip().startswith('for'):
+            state = 1
+            reg, from_val, to_val, step, line = for_loop_args(line)
+        if state == 1 and bracket_level == prev_level + 1:
+            state = 2
+            line = line.replace('{', '', 1)
+            if line.strip():
+                ans.append(line)
+        elif state == 2:
+            state = 3
+            for_loop_insert_head(ans, line, reg, from_val, step, pair)
+        elif state == 3 and bracket_level == prev_level - 1:
+            state = 0
+            ans += for_loop_insert_tail(line, reg, to_val, step, pair)
+        else:
+            ans.append(line)
+        if state <= 2:
+            prev_level = bracket_level
+    return ans
+
+
+def for_loop_insert_head(ans, line, reg, from_val, step, pair):
+    ans.append('    ' + reg + ' = ' + str(from_val) + ';\n')
+    ans.append('    do {\n')
+    ans.append('        push(' + pair[reg] + ');\n')
+    ans.append(line)
+
+
+def for_loop_insert_tail(line, reg, to_val, step, pair):
+    ans = line.split('}', 1)
+    ans[0] += ('\n')
+    ans.append(8*' ' + 'pop(' + pair[reg] + ');\n')
+    ans.append(for_loop_update_counter(reg, step))
+    if step > 0:
+        ans.append(8*' ' + 'a = ' + str(to_val) + ';\n')
+        ans.append(8*' ' + 'a -= ' + reg + ';\n')
+        ans.append('    } while (flag_nc);\n')
+    else:
+        ans.append(8*' ' + 'a = ' + reg + ';\n')
+        ans.append(8*' ' + 'a -= ' + str(to_val) + ';\n')
+        ans.append('    } while (flag_p);\n')
+    ans.append(ans.pop(1))
+    return ans
+
+
+def for_loop_update_counter(reg, step):
+    rement = ['--', '++']
+    ans = ''
+    spaces = 8*' '
+    if abs(step) <= 3:
+        for i in range(abs(step)):
+            ans += spaces + reg + rement[step > 0] + ';\n'
+        return ans
+    ans += spaces + 'a = ' + reg + '; a += ' + str(step) + '; ' + reg + ' = a;'
+    return ans + '\n'
+
+
+def update_bracket_level(bracket_level, line, symbols='()'):
+    state = 0
+    prev_chr = ''
+    for chr in line:
+        if state == 0 and chr == symbols[0]:
+            bracket_level += 1
+        elif state == 0 and chr == symbols[1]:
+            bracket_level -= 1
+        elif state == 0 and chr == "'":
+            state = 1
+        elif state == 1 and chr == "'" and prev_chr != '\\':
+            state = 0
+        if state == 0 and chr == '"':
+            state = 2
+        elif state == 2 and chr == '"' and prev_chr != '\\':
+            state = 0
+
+        prev_chr = chr
+    return bracket_level
+
+
+def for_loop_args(line):
+    reg = line.split('=')[0].split()[-1]
+    splt = line.split(':')
+    from_val = int(splt[0].strip().split('=')[-1])
+    to_val = int(splt[1].strip().split()[0])
+    step = int(splt[2].strip().split()[0]) if len(splt) == 3 else \
+        (1 if to_val > from_val else -1)
+    assert sgn(to_val - from_val) == sgn(step), 'Wrong step in for loop'
+    new_line = remove_for_loop(line)
+    return reg, from_val, to_val, step, new_line
+
+
+def remove_for_loop(line):
+    last_arg = line.rfind(':')
+    for i, x in enumerate(line[last_arg + 1:].lstrip()):
+        if x == '-' or x.isdigit():
+            continue
+        return line[last_arg + i + 2:]
+    return []
 
 
 def make_includes(lines):
@@ -275,8 +393,8 @@ def replace_bool_func_ifs(lines, foo_data):
                 flag = foo_data[foo_name][1]
                 if reverse:
                     flag = flags_inv[flag]
-                lines[num] = ' '*n_spaces + foo_call + ';\n' + ' '*n_spaces + \
-                    'if(flag_' + flag + ')\n'
+                lines[num] = ' ' * n_spaces + foo_call + ';\n' + \
+                    ' ' * n_spaces + 'if(flag_' + flag + ')\n'
 
 
 def replace_bool_with_void(lines):
@@ -291,6 +409,10 @@ def delete_bool_returns(lines):
         if len(splt) > 1 and splt[0] == 'return' and \
                 splt[1].split(';')[0] in flags_inv:
             lines[num] = '\n'
+
+
+def sgn(x):
+    return -1 if x < 0 else (1 if x > 0 else 0)
 
 
 if __name__ == '__main__':
