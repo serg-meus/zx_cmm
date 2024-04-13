@@ -2,38 +2,32 @@ void set_sys_border(a) {
     asm("    call 8859");
 }
 
-
 void set_sys_colors(a) {
     *ATTRJP = a;
 }
 
-
 void clear_screen() {
     asm("    call 3435");
 }
-
 
 void init_console() {
     a = 2;
     asm("    call 5633");
 }
 
-
 void puts(de) {
     while()
     {
         a = *de;
         if(a == 0)
-            return;
+            break;
         rst(0x10);
         de++;
     }
 }
 
-
-void interrupt_mode1_init() {
-    di();
-    ei();
+void putchar(a) {
+    asm("    rst 16");
 }
 
 
@@ -64,25 +58,25 @@ void inv_hl(hl) {
 
 
 void put_word_signed(hl) {
-    if(h & 0x80) {
+    if (h & 0x80) {
         putchar(a = '-');
         inv_hl(hl);
         ++hl;
     }
-    put_word_unsigned(bc = hl);
+    put_word_unsigned(bc=hl);
 }
 
 
 void compare_hl(de) {
     push(hl);
-    asm("    sbc hl, de");  // hl -= de gives not optimal result
+    asm("    sbc hl, de");  // hl -= de; gives not optimal result
     a = h;
-    a & 0x80;
+    a &= 0x80;
     pop(hl);
 }
 
 
-void interrupt_model_init() {
+void interrupt_mode1_init() {
     di();
     ei();
 }
@@ -96,8 +90,8 @@ bool is_space_pressed() {
 }
 
 
-void pause24(bc) {
+void pause24(bc ) {  // uses bc, a
     do {
         bc--;  // 6 tacts
-    } while(flag_nz(a = c) |= b);  // 4 + 4 + 12 = 18 tacts
+    } while (flag_nz (a = c) |= b);  // 4 + 4 + 12 = 18 tacts
 }
