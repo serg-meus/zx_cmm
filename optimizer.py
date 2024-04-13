@@ -6,6 +6,7 @@ from preprocessor import process_file
 
 auto_replace_jp_to_jr = True
 
+
 def optimize_z80_asm(lines):
     lines = strip_comments(lines)
     delete_unused_functions(lines)
@@ -147,14 +148,19 @@ def delete_functions(lines, unused_labels):
 
 def collect_labels(lines):
     labels = []
-    for line in lines:
-        if line[0] != ' ' and line[-2] == ':' and not is_auto_label(line):
+    for i, line in enumerate(lines):
+        if line[0] != ' ' and line[-2] == ':' and not is_auto_label(line) \
+                and not is_data_label(lines, i):
             labels.append(line.strip()[:-1])
     return labels
 
 
 def is_auto_label(line):
     return (line[0] == 'l' and line[1:-2].isnumeric()) or line == 'main:\n'
+
+
+def is_data_label(lines, i):
+    return lines[i + 1].lstrip().split()[0] in ('db', 'dw', 'dd', 'dh', 'ds')
 
 
 def filter_condition_calls(lines, label_data):
@@ -166,7 +172,7 @@ def filter_condition_calls(lines, label_data):
                 new_label_data[label] = label_data[label]
                 break
     if len(label_data) != len(new_label_data):
-        print('Optimizer warning: some functions were not inlined')
+        print("Optimizer warning: some functions were not inlined")
     return new_label_data
 
 
@@ -199,8 +205,9 @@ def replace_jr_to_jp(lines, repl):
             continue
         for j in range(1, 30):
             if (i + j < len(lines) and lines[i + j].startswith(splt[-1])) or \
-                    (j < i and lines[i - j].startswith(splt[-1])):
+                     (j < i and lines[i - j].startswith(splt[-1])):
                 lines[i] = '    jr ' + ' '.join(splt[1:]) + '\n'
+
 
 def replace_instructions(lines):
     replaces = {r'ld\s+a,\s+0': 'sub  a',
