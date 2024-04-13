@@ -57,17 +57,17 @@ void inv_hl(hl) {
 }
 
 
-void put_word_signed(hl) {
-    if (h & 0x80) {
+void put_word_signed(bc) {
+    if (b & 0x80) {
         putchar(a = '-');
-        inv_hl(hl);
-        ++hl;
+        inv_bc(bc);
+        ++bc;
     }
-    put_word_unsigned(bc=hl);
+    put_word_unsigned(bc);
 }
 
 
-void compare_hl(de) {
+void compare_hl(hl, de) {
     push(hl);
     asm("    sbc hl, de");  // hl -= de; gives not optimal result
     a = h;
@@ -94,4 +94,20 @@ void pause24(bc ) {  // uses bc, a
     do {
         bc--;  // 6 tacts
     } while (flag_nz (a = c) |= b);  // 4 + 4 + 12 = 18 tacts
+}
+
+void rra(a) {
+    asm("    rra");
+}
+
+void rla(a) {
+    asm("    rla");
+}
+
+void rrca(a) {
+    asm("    rrca");
+}
+
+void rlca(a) {
+    asm("    rlca");
 }

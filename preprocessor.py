@@ -38,6 +38,7 @@ def preprocessor(lines):
     make_replaces(lines, macro_data)
     process_bool_functions(lines)
     lines = process_for_loops(lines)
+    check_function_args(lines)
     return lines
 
 
@@ -433,6 +434,56 @@ def delete_bool_returns(lines):
         if len(sp) > 1 and sp[0] == 'return' and \
                 sp[1].split(';')[0] in flags_inv:
             lines[num] = '\n'
+
+
+def check_function_args(lines):
+    new_lines = split_by_semicolon(lines)
+    data = function_defs(new_lines)
+    for func_name in data:
+        check_func(new_lines, func_name, data[func_name])
+
+
+def function_defs(lines):
+    ans = {}
+    for line in lines:
+        splt = line.strip().split()
+        if len(splt) == 0 or splt[0] != 'void':
+            continue
+        ans[splt[1].split('(')[0]] = func_arg_registers(''.join(splt[1:]))
+    return ans
+
+
+def func_arg_registers(line):
+    ans = []
+    splt = line.split('(', 1)[1].split(')', 1)[0].split(',')
+    for reg in splt:
+        ans.append(reg)
+    return ans
+
+
+def check_func(lines, func_name, regs):
+    for line in lines:
+        if func_name not in line or line.strip().startswith('asm('):
+            continue
+        args = func_arg_registers(line[line.find(func_name):])
+        args = [x.split('=')[0].strip() for x in args]
+        assert sorted(''.join(args)) == sorted(''.join(regs)), \
+            'Error: wrong arguments in function call: ' + line.lstrip()
+
+
+def split_by_semicolon(lines):
+    new_lines = []
+    for line in lines:
+        if line.strip() and not line.strip().startswith('//'):
+            splt = line.rstrip().split(';')
+            addon = [x + ';' for x in splt]
+            if addon[-1] == ';':
+                del(addon[-1])
+            else:
+                addon[-1] = addon[-1][:-1]
+            if addon:
+                new_lines += addon
+    return new_lines
 
 
 def sgn(x):
