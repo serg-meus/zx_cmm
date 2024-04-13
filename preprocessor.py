@@ -99,7 +99,7 @@ def for_loop_insert_tail(line, reg, to_val, step):
         else:
             ans.append(8*' ' + acc + ' -= ' + reg + ';\n')
         ans.append('    } while (flag_nc);\n')
-    elif to_val != 0:
+    elif step != -1 or to_val != 1:
         ans.append(8*' ' + acc + ' = ' + reg + ';\n')
         if acc == 'a':
             ans.append(8*' ' + acc + ' -= ' + str(to_val) + ';\n')
@@ -108,7 +108,7 @@ def for_loop_insert_tail(line, reg, to_val, step):
                        + str(to_val) + '; asm("    sbc hl, ' + reg +
                        '"); pop(' + reg + ');')
         ans.append('    } while (flag_p);\n')
-    elif to_val == 0:
+    elif step == -1 and to_val == 1:
         if acc == 'hl':
             ans.append(8*' ' + '(a = ' + reg[1] + ') |= ' + reg[0] + ';\n')
         ans.append('    } while (flag_nz);\n')
@@ -196,9 +196,11 @@ def make_includes(lines):
 
 
 def add_source_include(lines, fname):
-    S = fname.split('.')
-    if len(S) > 0 and S[1].lower() == 'h' and os.path.exists(S[0] + '.c'):
-        lines.append('#include "' + S[0] + '.c"')
+    com_ix = fname.rfind('.')
+    name_and_ext = fname[:com_ix], fname[com_ix + 1:]
+    if len(name_and_ext) > 0 and name_and_ext[1].lower() == 'h' and \
+            os.path.exists(name_and_ext[0] + '.c'):
+        lines.append('#include "' + name_and_ext[0] + '.c"')
 
 
 class macro_params:
@@ -501,14 +503,22 @@ def split_by_semicolon(lines):
 def move_variables_to_end(lines):
     tail = []
     deleted_nums = []
+    state = 0
     for line_num, line in enumerate(lines):
         splt = line.strip().split()
         if len(splt) > 1 and splt[1].startswith('main('):
             break
-        if len(splt) > 0 and (splt[0].startswith('int') or
-                              splt[0].startswith('uint')):
+        if state == 0 and len(splt) > 0 and (splt[0].startswith('int') or
+                                             splt[0].startswith('uint')):
             tail.append(line)
             deleted_nums.append(line_num)
+            if ';' not in line:
+                state = 1
+        elif state == 1:
+            tail.append(line)
+            deleted_nums.append(line_num)
+            if ';' in line:
+                state = 0
     for num in deleted_nums[::-1]:
         del(lines[num])
     lines += tail
