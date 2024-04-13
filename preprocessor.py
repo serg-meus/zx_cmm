@@ -33,6 +33,7 @@ def write_out_file(lines, out_file):
 
 def preprocessor(lines):
     lines = make_includes(lines)
+    move_variables_to_end(lines)
     macro_data = collect_macrofunctions(lines)
     delete_definitions(lines)
     make_replaces(lines, macro_data)
@@ -463,7 +464,9 @@ def func_arg_registers(line):
 
 def check_func(lines, func_name, regs):
     for line in lines:
-        if func_name not in line or line.strip().startswith('asm('):
+        splt = line.strip().split('(', maxsplit=1)
+        if len(splt) == 0 or splt[0] != func_name or \
+                line.strip().startswith('asm('):
             continue
         args = func_arg_registers(line[line.find(func_name):])
         args = [x.split('=')[0].strip() for x in args]
@@ -484,6 +487,22 @@ def split_by_semicolon(lines):
             if addon:
                 new_lines += addon
     return new_lines
+
+
+def move_variables_to_end(lines):
+    tail = []
+    deleted_nums = []
+    for line_num, line in enumerate(lines):
+        splt = line.strip().split()
+        if len(splt) > 1 and splt[1].startswith('main('):
+            break
+        if len(splt) > 0 and (splt[0].startswith('int') or
+                              splt[0].startswith('uint')):
+            tail.append(line)
+            deleted_nums.append(line_num)
+    for num in deleted_nums[::-1]:
+        del(lines[num])
+    lines += tail
 
 
 def sgn(x):
