@@ -12,7 +12,9 @@ python add_asm_options.py temp1.asm temp2.asm +bin +tap +hob org=#6000 project_n
 $asm_path/sjasmplus --lst=$project_name.lst --lstlab temp2.asm
 $zmakebas_path/zmakebas -a 10 -o boot.tap -n $project_name $project_name.bas
 cat boot.tap $project_name\_c.tap > $project_name.tap
-#rm $project_name\_c.tap
+rm $project_name\_c.tap
+echo Size of binary in bytes:
+stat -c %s %project_name\.bin
 cur_dir=$PWD
 cd $emul_path
 ./$emul_file $cur_dir/$project_name.tap

@@ -24,5 +24,9 @@ if not %errorlevel% == 0 pause && exit
 type boot.tap %project_name%_c.tap > %project_name%.tap
 del %project_name%_c.tap
 
+echo off
+echo Size of binary in bytes:
+for %%I in (%project_name%.bin) do @echo %%~zI
+
 %emulator_path% %project_name%.tap && exit
 pause
