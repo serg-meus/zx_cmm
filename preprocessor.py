@@ -5,6 +5,11 @@ from sys import argv
 flags_inv = {'z': 'nz', 'nz': 'z', 'c': 'nc', 'nc': 'c', 'p': 'm', 'm': 'p',
              'pe': 'po', 'po': 'pe'}
 
+reg_pair = {'a': 'af', 'b': 'bc', 'c': 'bc', 'd': 'de', 'e': 'de', 'h': 'hl',
+            'l': 'hl', 'ixl': 'ix', 'ixh': 'ix', 'iyl': 'iy', 'iyh': 'iy',
+            'bc': 'bc', 'de': 'de', 'hl': 'hl', 'ix': 'ix', 'iy': 'iy'}
+
+
 def process_file(in_fname, out_fname, function):
     with open(in_fname) as in_file:
         lines = read_lines(in_file)
@@ -45,9 +50,6 @@ def process_for_loops(lines):
 
 
 def process_for_loop(lines):
-    pair = {'a': 'a', 'b': 'bc', 'c': 'bc', 'd': 'de', 'e': 'de', 'h': 'hl',
-            'l': 'hl', 'ixl': 'ix', 'ixh': 'ix', 'iyl': 'iy', 'iyh': 'iy',
-            'bc': 'bc', 'de': 'de', 'hl': 'hl', 'ix': 'ix', 'iy': 'iy'}
     state = bracket_level = prev_level = from_val = to_val = step = 0
     reg = ''
     ans = []
@@ -63,10 +65,10 @@ def process_for_loop(lines):
                 ans.append(line)
         elif state == 2:
             state = 3
-            for_loop_insert_head(ans, line, reg, from_val, step, pair)
+            for_loop_insert_head(ans, line, reg, from_val, step)
         elif state == 3 and bracket_level == prev_level - 1:
             state = 0
-            ans += for_loop_insert_tail(line, reg, to_val, step, pair)
+            ans += for_loop_insert_tail(line, reg, to_val, step)
         else:
             ans.append(line)
         if state <= 2:
@@ -74,25 +76,30 @@ def process_for_loop(lines):
     return ans
 
 
-def for_loop_insert_head(ans, line, reg, from_val, step, pair):
+def for_loop_insert_head(ans, line, reg, from_val, step):
     ans.append('    ' + reg + ' = ' + str(from_val) + ';\n')
     ans.append('    do {\n')
-    ans.append('        push(' + pair[reg] + ');\n')
+    ans.append('        push(' + reg_pair[reg] + ');\n')
     ans.append(line)
 
 
-def for_loop_insert_tail(line, reg, to_val, step, pair):
+def for_loop_insert_tail(line, reg, to_val, step):
     ans = line.split('}', 1)
     ans[0] += ('\n')
-    ans.append(8*' ' + 'pop(' + pair[reg] + ');\n')
+    ans.append(8*' ' + 'pop(' + reg_pair[reg] + ');\n')
     ans.append(for_loop_update_counter(reg, step))
+    acc = 'hl' if reg_pair[reg] == reg else 'a'
     if step > 0:
-        ans.append(8*' ' + 'a = ' + str(to_val) + ';\n')
-        ans.append(8*' ' + 'a -= ' + reg + ';\n')
+        ans.append(8*' ' + acc + ' = ' + str(to_val) + ';\n')
+        ans.append(8*' ' + acc + ' -= ' + reg + ';\n')
         ans.append('    } while (flag_nc);\n')
     else:
-        ans.append(8*' ' + 'a = ' + reg + ';\n')
-        ans.append(8*' ' + 'a -= ' + str(to_val) + ';\n')
+        ans.append(8*' ' + acc + ' = ' + reg + ';\n')
+        if acc != 'hl':
+            ans.append(8*' ' + acc + ' -= ' + str(to_val) + ';\n')
+        else:
+            ans.append(8*' ' + 'push(' + reg + '); ' + reg + ' = ' +
+                       str(to_val) + '; hl -= ' + reg + '; pop(' + reg + ');')
         ans.append('    } while (flag_p);\n')
     ans.append(ans.pop(1))
     return ans
@@ -133,6 +140,7 @@ def update_bracket_level(bracket_level, line, symbols='()'):
 
 def for_loop_args(line):
     reg = line.split('=')[0].split()[-1]
+    assert reg not in ('a', 'hl'), 'Wrong loop counter'
     splt = line.split(':')
     from_val = int(splt[0].strip().split('=')[-1])
     to_val = int(splt[1].strip().split()[0])
@@ -352,7 +360,7 @@ def collect_func_data(lines):
         splt = line.split()
         if splt == [] or splt[0] not in ('void', 'bool'):
             continue
-        return_type = '' if splt == 'void' else get_return_type(lines, num)
+        return_type = '' if splt[0] == 'void' else get_return_type(lines, num)
         ans[splt[1].split('(')[0]] = (splt[0], return_type)
     return ans
 
@@ -369,7 +377,7 @@ def get_return_type(lines, first_line_num):
 
 def last_line_num(lines, first_line_num):
     brace_level = 0
-    for num, line in enumerate(lines[first_line_num::]):
+    for i, line in enumerate(lines[first_line_num::]):
         for char in line:
             if char == '{':
                 brace_level += 1
@@ -379,7 +387,7 @@ def last_line_num(lines, first_line_num):
                 brace_level -= 1
         if char == '}' and brace_level == 1:
             break
-    return num + first_line_num
+    return i + first_line_num
 
 
 def replace_bool_func_ifs(lines, foo_data):
@@ -405,9 +413,9 @@ def replace_bool_with_void(lines):
 
 def delete_bool_returns(lines):
     for num, line in enumerate(lines):
-        splt = line.split()
-        if len(splt) > 1 and splt[0] == 'return' and \
-                splt[1].split(';')[0] in flags_inv:
+        sp = line.split()
+        if len(sp) > 1 and sp[0] == 'return' and \
+                sp[1].split(';')[0] in flags_inv:
             lines[num] = '\n'
 
 
