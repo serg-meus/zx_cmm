@@ -24,16 +24,6 @@ const int ZX128_ROM48 = 16;
 const int ZX128_CONFIG128 = 0;
 const int ZX128_CONFIG48 = 32;
 
-const int PENT1024_PORT = 0xeff7;
-const int PENT1024_4BITS = 1;
-const int PENT1024_512x192 = 2;
-const int PENT1024_CFG128 = 4;
-const int PENT1024_RAM0 = 8;
-const int PENT1024_NOTURBO = 16;
-const int PENT1024_MCOLOR = 32;
-const int PENT1024_384x304 = 64;
-const int PENT1024_CMOS = 128;
-
 const int CALC_XCH = 1;
 const int CALC_SUB = 3;
 const int CALC_MUL = 4;

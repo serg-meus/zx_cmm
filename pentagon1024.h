@@ -1,0 +1,9 @@
+const int PENT1024_PORT = 0xeff7;
+const int PENT1024_4BITS = 1;
+const int PENT1024_512x192 = 2;
+const int PENT1024_CFG128 = 4;
+const int PENT1024_RAM0 = 8;
+const int PENT1024_NOTURBO = 16;
+const int PENT1024_MCOLOR = 32;
+const int PENT1024_384x304 = 64;
+const int PENT1024_CMOS = 128;
