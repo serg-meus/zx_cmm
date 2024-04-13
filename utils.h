@@ -1,3 +1,9 @@
+#define ZX_ATTR_CODE(ink, paper, bright=0, flash=0) \
+[ink + 8*paper + 64*bright + 128*flash]
+
+#enum(ZX_BLACK = 0, ZX_BLUE, ZX_RED, ZX_MAGENTA, ZX_GREEN, ZX_CYAN, \
+ZX_YELLOW, ZX_WHITE)
+
 const int SCREEN_BEG = 0x4000;
 const int SCREEN_LEN = 32*192;
 const int ATTRJP = 23693;
