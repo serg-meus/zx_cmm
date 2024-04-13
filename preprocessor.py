@@ -109,12 +109,20 @@ def for_loop_insert_tail(line, reg, to_val, step):
 def for_loop_update_counter(reg, step):
     rement = ['--', '++']
     ans = ''
-    spaces = 8*' '
     if abs(step) <= 3:
         for i in range(abs(step)):
-            ans += spaces + reg + rement[step > 0] + ';\n'
+            ans += 8*' ' + reg + rement[step > 0] + ';\n'
         return ans
-    ans += spaces + 'a = ' + reg + '; a += ' + str(step) + '; ' + reg + ' = a;'
+    if reg_pair[reg] != reg:
+        ans += 8*' ' + 'a = ' + reg + '; a += ' + str(step) + \
+            '; ' + reg + ' = a;'
+    else:
+        if step > 0:
+            ans += 8*' ' + 'hl = ' + str(step) + '; hl += ' + reg + '; ' + \
+                reg + ' = hl;\n'
+        else:
+            ans += 8*' ' + 'hl = ' + reg + '; ' + reg + ' = ' + str(-step) + \
+                '; hl -= ' + reg + '; ' + reg + ' = hl;\n'
     return ans + '\n'
 
 
