@@ -60,7 +60,7 @@ def process_for_loop(lines):
         bracket_level = update_bracket_level(bracket_level, line, '{}')
         if state == 0 and line.lstrip().startswith('for'):
             state = 1
-            reg, from_val, to_val, step, line = for_loop_args(line)
+            reg, from_val, to_val, step, line, not_push = for_loop_args(line)
         if state == 1 and bracket_level == prev_level + 1:
             state = 2
             line = line.replace('{', '', 1)
@@ -68,10 +68,10 @@ def process_for_loop(lines):
                 ans.append(line)
         elif state == 2:
             state = 3
-            for_loop_insert_head(ans, line, reg, from_val, step)
+            for_loop_insert_head(ans, line, reg, from_val, step, not_push)
         elif state == 3 and bracket_level == prev_level - 1:
             state = 0
-            ans += for_loop_insert_tail(line, reg, to_val, step)
+            ans += for_loop_insert_tail(line, reg, to_val, step, not_push)
         else:
             ans.append(line)
         if state <= 2:
@@ -79,17 +79,19 @@ def process_for_loop(lines):
     return ans
 
 
-def for_loop_insert_head(ans, line, reg, from_val, step):
+def for_loop_insert_head(ans, line, reg, from_val, step, not_push):
     ans.append('    ' + reg + ' = ' + str(from_val) + ';\n')
     ans.append('    do {\n')
-    ans.append('        push(' + reg_pair[reg] + ');\n')
+    if not not_push:
+        ans.append('        push(' + reg_pair[reg] + ');\n')
     ans.append(line)
 
 
-def for_loop_insert_tail(line, reg, to_val, step):
+def for_loop_insert_tail(line, reg, to_val, step, not_push):
     ans = line.split('}', 1)
     ans[0] += ('\n')
-    ans.append(8*' ' + 'pop(' + reg_pair[reg] + ');\n')
+    if not not_push:
+        ans.append(8*' ' + 'pop(' + reg_pair[reg] + ');\n')
     ans.append(for_loop_update_counter(reg, step))
     acc = 'hl' if reg_pair[reg] == reg else 'a'
     if step > 0:
@@ -167,12 +169,16 @@ def for_loop_args(line):
     step = int(splt[2].strip().split()[0]) if len(splt) == 3 else \
         (1 if to_val > from_val else -1)
     assert sgn(to_val - from_val) == sgn(step), 'Wrong step in for loop'
+    not_push = len(splt) == 4 and \
+        splt[3].strip().lower().startswith('not_push')
     new_line = remove_for_loop(line)
-    return reg, from_val, to_val, step, new_line
+    return reg, from_val, to_val, step, new_line, not_push
 
 
 def remove_for_loop(line):
     last_arg = line.rfind(':')
+    if line[last_arg + 1:].lstrip().lower().startswith('not_push'):
+        line = line.replace('not_push', '').replace('NOT_PUSH', '')
     for i, x in enumerate(line[last_arg + 1:].lstrip()):
         if x == '-' or x.isdigit():
             continue
@@ -399,7 +405,7 @@ def get_return_type(lines, first_line_num):
     last_num = last_line_num(lines, first_line_num)
     for i in range(last_num, first_line_num, -1):
         splt = lines[i].split()
-        if splt[0] == 'return':
+        if len(splt) > 0 and splt[0] == 'return':
             ans = splt[1].split(';')[0]
     return ans
 
