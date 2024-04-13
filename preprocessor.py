@@ -94,16 +94,25 @@ def for_loop_insert_tail(line, reg, to_val, step):
     acc = 'hl' if reg_pair[reg] == reg else 'a'
     if step > 0:
         ans.append(8*' ' + acc + ' = ' + str(to_val) + ';\n')
-        ans.append(8*' ' + acc + ' -= ' + reg + ';\n')
-        ans.append('    } while (flag_nc);\n')
-    else:
-        ans.append(8*' ' + acc + ' = ' + reg + ';\n')
-        if acc != 'hl':
-            ans.append(8*' ' + acc + ' -= ' + str(to_val) + ';\n')
+        if acc == 'hl':
+            ans.append(8*' ' + 'asm("    sbc hl, ' + reg + '");\n')
         else:
-            ans.append(8*' ' + 'push(' + reg + '); ' + reg + ' = ' +
-                       str(to_val) + '; hl -= ' + reg + '; pop(' + reg + ');')
+            ans.append(8*' ' + acc + ' -= ' + reg + ';\n')
+        ans.append('    } while (flag_nc);\n')
+    elif to_val != 0:
+        ans.append(8*' ' + acc + ' = ' + reg + ';\n')
+        if acc == 'a':
+            ans.append(8*' ' + acc + ' -= ' + str(to_val) + ';\n')
+        elif acc == 'hl':
+            ans.append(8*' ' + 'push(' + reg + '); ' + reg + ' = '
+                       + str(to_val) + '; asm("    sbc hl, ' + reg +
+                       '"); pop(' + reg + ');')
         ans.append('    } while (flag_p);\n')
+    elif to_val == 0:
+        if acc == 'hl':
+            ans.append(8*' ' + '(a = ' + reg[1] + ') |= ' + reg[0] + ';\n')
+        ans.append('    } while (flag_nz);\n')
+
     ans.append(ans.pop(1))
     return ans
 
