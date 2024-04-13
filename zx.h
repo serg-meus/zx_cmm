@@ -4,9 +4,14 @@
 #enum(ZX_BLACK = 0, ZX_BLUE, ZX_RED, ZX_MAGENTA, ZX_GREEN, ZX_CYAN, \
 ZX_YELLOW, ZX_WHITE)
 
-const int SCREEN_BEG = 0x4000;
-const int SCREEN_LEN = 32*192;
-const int ATTRJP = 23693;
+const int ZX_SCREEN_BEG = 0x4000;
+const int ZX_SCREEN_LEN = 32*192;
+const int ZX_ATTR_P = 23693;
+const int ZX_LAST_K = 23560;
+const int ZX_ERR_SP = 23613;
+const int ZX_FRAMES = 23672;
+const int ZX_RAMTOP = 23730;
+
 
 const int ZX128_PORT = 0x7ffd;
 const int ZX128_RAM0 = 0;

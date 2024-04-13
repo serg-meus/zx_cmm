@@ -3,7 +3,7 @@ void set_sys_border(a) {
 }
 
 void set_sys_colors(a) {
-    *ATTRJP = a;
+    *ZX_ATTR_P = a;
 }
 
 void clear_screen() {
@@ -27,35 +27,13 @@ void puts(de) {
 }
 
 void putchar(a) {
-    asm("    rst 16");
+    rst(0x10);
 }
-
 
 void put_word_unsigned(bc) {
     asm("    call 11563");
     asm("    call 11747");
 }
-
-
-void inv_bc(bc) {
-    a = b;
-    asm("    cpl");
-    b = a;
-    a = c;
-    asm("    cpl");
-    c = a;
-}
-
-
-void inv_hl(hl) {
-    a = h;
-    asm("    cpl");
-    h = a;
-    a = l;
-    asm("    cpl");
-    l = a;
-}
-
 
 void put_word_signed(bc) {
     if (b & 0x80) {
@@ -66,22 +44,6 @@ void put_word_signed(bc) {
     put_word_unsigned(bc);
 }
 
-
-void compare_hl(hl, de) {
-    push(hl);
-    asm("    sbc hl, de");  // hl -= de; gives not optimal result
-    a = h;
-    a &= 0x80;
-    pop(hl);
-}
-
-
-void interrupt_mode1_init() {
-    di();
-    ei();
-}
-
-
 bool is_space_pressed() {
     a = 0x7f;
     a = in(0xfe);
@@ -89,25 +51,13 @@ bool is_space_pressed() {
     return nc;
 }
 
-
-void pause24(bc ) {  // uses bc, a
-    do {
-        bc--;  // 6 tacts
-    } while (flag_nz (a = c) |= b);  // 4 + 4 + 12 = 18 tacts
+bool is_break_pressed() {
+    asm("    call 8020");
+    return nc;
 }
 
-void rra(a) {
-    asm("    rra");
-}
-
-void rla(a) {
-    asm("    rla");
-}
-
-void rrca(a) {
-    asm("    rrca");
-}
-
-void rlca(a) {
-    asm("    rlca");
+void zx_sound_beep(hl, de) {
+    // hl = 437500/freq_hz - 30.125
+    // de = freq_hz*time_s
+    asm("    call 949");
 }
