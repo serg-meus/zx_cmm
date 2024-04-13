@@ -22,7 +22,7 @@ if not %errorlevel% == 0 pause && exit
 %zmakebas_path%\zmakebas.exe -a 10 -o boot.tap -n %project_name% %project_name%.bas
 
 type boot.tap %project_name%_c.tap > %project_name%.tap
-del %project_name%_c.tap
+del %project_name%_c.tap boot.tap
 
 echo off
 echo Size of binary in bytes:
