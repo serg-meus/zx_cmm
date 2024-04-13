@@ -22,5 +22,3 @@ void main()
         putchar(a=0x0d); // '\r'
     }
 }
-
-#include "zx.c"

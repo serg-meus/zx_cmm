@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from sys import argv
+import os
 
 flags_inv = {'z': 'nz', 'nz': 'z', 'c': 'nc', 'nc': 'c', 'p': 'm', 'm': 'p',
              'pe': 'po', 'po': 'pe'}
@@ -165,6 +166,7 @@ def make_includes(lines):
     for line in lines:
         if line.lstrip().startswith('#include'):
             fname = line.split('"')[1]
+            add_source_include(lines, fname)
             with open(fname) as file:
                 add_lines = read_lines(file)
                 for add_line in add_lines:
@@ -172,6 +174,12 @@ def make_includes(lines):
         else:
             new_lines.append(line)
     return new_lines
+
+
+def add_source_include(lines, fname):
+    S = fname.split('.')
+    if len(S) > 0 and S[1].lower() == 'h' and os.path.exists(S[0] + '.c'):
+        lines.append('#include "' + S[0] + '.c"')
 
 
 class macro_params:
