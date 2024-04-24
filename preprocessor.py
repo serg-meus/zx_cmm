@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# from sys import argv
-argv = ['', 'example.c', 'temp0.c']
+from sys import argv
 import os
 
 flags_inv = {'z': 'nz', 'nz': 'z', 'c': 'nc', 'nc': 'c', 'p': 'm', 'm': 'p',
@@ -399,6 +398,8 @@ def replace_tokens(macro, body_tokens):
 
 def update_arg_values(tokens, macro):
     for i, tok in enumerate(tokens):
+        if tok == ')':
+            break
         for arg_i, arg in enumerate(macro.arg_names):
             if tok == arg and tokens[i + 1] == '=':
                 macro.arg_values[arg_i] = tokens[i + 2]
