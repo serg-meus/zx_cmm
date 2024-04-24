@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from sys import argv
+# from sys import argv
+argv = ['', 'example.c', 'temp0.c']
 import os
 
 flags_inv = {'z': 'nz', 'nz': 'z', 'c': 'nc', 'nc': 'c', 'p': 'm', 'm': 'p',
@@ -33,6 +34,7 @@ def write_out_file(lines, out_file):
 
 def preprocessor(lines):
     lines = make_includes(lines)
+    lines = format_code(lines)
     move_variables_to_end(lines)
     macro_data = collect_macrofunctions(lines)
     delete_definitions(lines)
@@ -40,6 +42,73 @@ def preprocessor(lines):
     process_bool_functions(lines)
     lines = process_for_loops(lines)
     check_function_args(lines)
+    return lines
+
+
+def format_code(lines):
+    lines = split_by_semicolon(lines)
+    lines = format_braces(lines)
+    # lines = format_indent(lines)
+    return lines
+
+
+def format_braces(lines):
+    new_lines = []
+    for line in lines:
+        ix = find_signifficant_symbols(line, '{}')
+        if not ix:
+            new_lines.append(line)
+            continue
+        new_lines += split_by_indices(line, ix, separate=True)
+    return new_lines
+
+
+def split_by_indices(line, indices, keep_separators=True, separate=False):
+    if keep_separators:
+        ix = [0] + [x + (0 if separate else 1) for x in indices]
+        ans = [line[i:j] for i, j in zip(ix, ix[1:] + [None]) if line[i:j]]
+        line_nums_to_delete = []
+        for i, lin in enumerate(ans):
+            if lin == '\n':
+                line_nums_to_delete.append(i)
+            elif lin[-1] != '\n':
+                ans[i] += '\n'
+        delete_lines(ans, line_nums_to_delete)
+        return ans
+    elif indices:
+        ix = [0] + indices
+        ans = [line[i:j-1] for i, j in zip(ix, ix[1:] + [None]) if line[i:j-1]]
+        return ans
+    else:
+        return [line]
+
+
+def find_signifficant_symbols(line, symbols):
+    pos = []
+    prev_sym = ''
+    state = 0
+    for i, sym in enumerate(line):
+        if state == 0 and sym == prev_sym == '/':
+            break
+        elif state == 0 and sym == '"':
+            state = 1
+            continue
+        elif state == 1 and sym == '"':
+            state = 0
+            continue
+        elif state == 0 and sym == "'":
+            state = 2
+            continue
+        elif state == 2 and sym == "'":
+            state = 0
+            continue
+        elif state == 0 and sym in symbols:
+            pos.append(i)
+        prev_sym = sym
+    return pos
+
+
+def format_function_args(lines):
     return lines
 
 
@@ -183,7 +252,7 @@ def remove_for_loop(line):
         if x == '-' or x.isdigit():
             continue
         return line[last_arg + i + 2:]
-    return []
+    return ''
 
 
 def make_includes(lines):
@@ -455,10 +524,9 @@ def delete_bool_returns(lines):
 
 
 def check_function_args(lines):
-    new_lines = split_by_semicolon(lines)
-    data = function_defs(new_lines)
+    data = function_defs(lines)
     for func_name in data:
-        check_func(new_lines, func_name, data[func_name])
+        check_func(lines, func_name, data[func_name])
 
 
 def function_defs(lines):
@@ -494,15 +562,8 @@ def check_func(lines, func_name, regs):
 def split_by_semicolon(lines):
     new_lines = []
     for line in lines:
-        if line.strip() and not line.strip().startswith('//'):
-            splt = line.rstrip().split(';')
-            addon = [x + ';' for x in splt]
-            if addon[-1] == ';':
-                del(addon[-1])
-            else:
-                addon[-1] = addon[-1][:-1]
-            if addon:
-                new_lines += addon
+        ix = find_signifficant_symbols(line, ';')
+        new_lines += split_by_indices(line, ix, keep_separators=True)
     return new_lines
 
 
