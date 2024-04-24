@@ -2,13 +2,13 @@
 
 void main()
 {
-    set_sys_colors(a=ZX_ATTR_CODE(ink=ZX_YELLOW, paper=ZX_BLUE, bright=1));
+    set_sys_colors(a=ZX_ATTR(ink=ZX_YELLOW, paper=ZX_BLUE, bright=1));
     set_sys_border(a=ZX_BLUE);
     clear_screen();
     init_console();
     puts(de="Hello world!\r\r");
 
-    set_sys_colors(a=ZX_ATTR_CODE(ink=ZX_CYAN, paper=ZX_BLUE));
+    set_sys_colors(a=ZX_ATTR(ink=ZX_CYAN, paper=ZX_BLUE));
     init_console();
     puts(de="Nested loop example:\r\r");
     for b = 0:7  {
