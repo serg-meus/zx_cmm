@@ -2,6 +2,7 @@
 
 from sys import argv
 import os
+from re import sub
 
 flags_inv = {'z': 'nz', 'nz': 'z', 'c': 'nc', 'nc': 'c', 'p': 'm', 'm': 'p',
              'pe': 'po', 'po': 'pe'}
@@ -9,6 +10,12 @@ flags_inv = {'z': 'nz', 'nz': 'z', 'c': 'nc', 'nc': 'c', 'p': 'm', 'm': 'p',
 reg_pair = {'a': 'af', 'b': 'bc', 'c': 'bc', 'd': 'de', 'e': 'de', 'h': 'hl',
             'l': 'hl', 'ixl': 'ix', 'ixh': 'ix', 'iyl': 'iy', 'iyh': 'iy',
             'bc': 'bc', 'de': 'de', 'hl': 'hl', 'ix': 'ix', 'iy': 'iy'}
+
+common_replaces = {r'(\s)([bcdehl]{1}) ([\+\-\^&|]{1})= ([a-zA-z0-9]+)':
+                   r'\1a = \2; a \3= \4; \2 = a',
+                   r'(\s)([bcdehl]{1}) ([<>]{2})= ([a-zA-z0-9]+)':
+                   r'\1a = \2; a \3= \4; \2 = a',
+                   }
 
 
 def process_file(in_fname, out_fname, function):
@@ -37,10 +44,11 @@ def preprocessor(lines):
     move_variables_to_end(lines)
     macro_data = collect_macrofunctions(lines)
     delete_definitions(lines)
-    make_replaces(lines, macro_data)
+    make_replaces_macro(lines, macro_data)
     process_bool_functions(lines)
     lines = process_for_loops(lines)
     check_function_args(lines)
+    lines = make_replaces_common(lines)
     return lines
 
 
@@ -289,7 +297,7 @@ def collect_macrofunctions(lines):
     macro_data = []
     for i, line in enumerate(lines):
         if line.strip() and is_define_or_enum(line):
-            fill_macro_data(connect_lines(lines[i:]), macro_data)
+            fill_macro_data(connect_macro_lines(lines[i:]), macro_data)
     return macro_data
 
 
@@ -321,7 +329,7 @@ def complete_enum_values(values):
             values[i] = 0 if i == 0 else str(int(values[i - 1]) + 1)
 
 
-def connect_lines(lines):
+def connect_macro_lines(lines):
     connected = ''
     for line in lines:
         connected += line[:-1]
@@ -353,7 +361,7 @@ def fill_macro_body(line, macro):
     macro.body = line.partition(')')[2].strip() if ')' in T else ''.join(T[4:])
 
 
-def make_replaces(lines, macro_data):
+def make_replaces_macro(lines, macro_data):
     for macro in macro_data:
         replace_in_text(lines, macro)
 
@@ -594,6 +602,27 @@ def move_variables_to_end(lines):
 
 def sgn(x):
     return -1 if x < 0 else (1 if x > 0 else 0)
+
+
+def make_replaces_common(lines):
+    text = connect_lines(lines)
+    for replace in common_replaces:
+        text = sub(replace, common_replaces[replace], text)
+    return split_text(text)
+
+
+def connect_lines(lines):
+    text = ''
+    for line in lines:
+        text += line
+    return text
+
+
+def split_text(text):
+    lines = text.split('\n')
+    for i, line in enumerate(lines):
+        lines[i] += '\n'
+    return lines
 
 
 if __name__ == '__main__':

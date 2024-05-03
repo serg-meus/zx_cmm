@@ -2,7 +2,7 @@
 
 from sys import argv
 from re import sub
-from preprocessor import process_file
+from preprocessor import process_file, connect_lines, split_text
 
 auto_replace_jp_to_jr = True
 
@@ -213,7 +213,8 @@ def replace_instructions(lines):
     replaces = {r'ld\s+a,\s+0': 'sub  a',
                 r'dec\s+b\n\s+j[rp]\s+nz,\s+(\w+)': r'djnz \1',
                 r'call\s+(\w+)\n\s+ret': r'jp  \1',
-                r'\s+jp\s+(\w+)\n\1:': r'\n\1:'}
+                r'\s+jp\s+(\w+)\n\1:': r'\n\1:',
+                r'xor\s+255': 'cpl'}
     if auto_replace_jp_to_jr:
         replaces[r'jp\s+(l\d+)'] = r'IF \1 - $ < 127\n        jr \1\n' + \
             r'    ELSE\n        jp \1\n    ENDIF'
@@ -223,20 +224,6 @@ def replace_instructions(lines):
     for replace in replaces:
         text = sub(replace, replaces[replace], text)
     return split_text(text)
-
-
-def connect_lines(lines):
-    text = ''
-    for line in lines:
-        text += line
-    return text
-
-
-def split_text(text):
-    lines = text.split('\n')
-    for i, line in enumerate(lines):
-        lines[i] += '\n'
-    return lines
 
 
 if __name__ == '__main__':
