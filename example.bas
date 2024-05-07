@@ -1,3 +1,3 @@
-10 clear val "24575"
+10 clear val "addr" - sgn pi
 20 load "" code
-30 randomize usr val "24576"
+30 randomize usr val "addr"
