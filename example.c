@@ -11,7 +11,7 @@ void main()
     set_sys_colors(a=ZX_ATTR(ink=ZX_CYAN, paper=ZX_BLUE));
     init_console();
     puts(de="Nested loop example:\r\r");
-    for b = 0:7  {
+    for b = 0: 0x07  {
         for c = 7:0:-1
         {
             a = c; a ^= 0x0f; a <<= 3; a |= c;

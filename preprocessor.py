@@ -136,7 +136,8 @@ def process_for_loop(lines):
         bracket_level = update_bracket_level(bracket_level, line, '{}')
         if state == 0 and line.lstrip().startswith('for'):
             state = 1
-            reg, from_val, to_val, step, line, not_push = for_loop_args(line)
+            reg, from_val, to_val, step, not_push = for_loop_args(line)
+            line = ''
         if state == 1 and bracket_level == prev_level + 1:
             state = 2
             line = line.replace('{', '', 1)
@@ -240,26 +241,14 @@ def for_loop_args(line):
     reg = line.split('=')[0].split()[-1]
     assert reg not in ('a', 'hl'), 'Wrong loop counter'
     splt = line.split(':')
-    from_val = int(splt[0].strip().split('=')[-1])
-    to_val = int(splt[1].strip().split()[0])
-    step = int(splt[2].strip().split()[0]) if len(splt) == 3 else \
+    from_val = int(splt[0].strip().split('=')[-1], 0)
+    to_val = int(splt[1].strip().split()[0], 0)
+    step = int(splt[2].strip().split()[0], 0) if len(splt) == 3 else \
         (1 if to_val > from_val else -1)
     assert sgn(to_val - from_val) == sgn(step), 'Wrong step in for loop'
     not_push = len(splt) == 4 and \
         splt[3].strip().lower().startswith('not_push')
-    new_line = remove_for_loop(line)
-    return reg, from_val, to_val, step, new_line, not_push
-
-
-def remove_for_loop(line):
-    last_arg = line.rfind(':')
-    if line[last_arg + 1:].lstrip().lower().startswith('not_push'):
-        line = line.replace('not_push', '').replace('NOT_PUSH', '')
-    for i, x in enumerate(line[last_arg + 1:].lstrip()):
-        if x == '-' or x.isdigit():
-            continue
-        return line[last_arg + i + 2:]
-    return ''
+    return reg, from_val, to_val, step, not_push
 
 
 def make_includes(lines):
