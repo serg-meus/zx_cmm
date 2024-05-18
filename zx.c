@@ -91,3 +91,43 @@ void down_de(de) {
         }
     }
 }
+
+void screen_addr_by_char_coord_hl(hl) {
+    // h - column number (0..31)
+    // l - row number (0..23)
+    // returns screen addr in hl
+    (a = l) &= 7;
+    asm("    rrca"); asm("    rrca"); asm("    rrca");
+    a += h;
+    h = l; l = a;
+    (a = h) &= 0x18;
+    a |= [ZX_SCREEN_BEG/0x100];
+    h = a;
+}
+
+void screen_addr_by_char_coord_de(de) {
+    // d - column number (0..31)
+    // e - row number (0..23)
+    // returns screen addr in de
+    (a = e) &= 7;
+    asm("    rrca"); asm("    rrca"); asm("    rrca");
+    a += d;
+    d = e; e = a;
+    (a = d) &= 0x18;
+    a |= [ZX_SCREEN_BEG/0x100];
+    d = a;
+}
+
+void attribute_addr_by_screen_addr_hl(h) {
+    (a = h) &= 0x18;
+    asm("    rrca"); asm("    rrca"); asm("    rrca");
+    a += [(ZX_SCREEN_BEG + ZX_SCREEN_LEN)/0x100];
+    h = a;
+}
+
+void attribute_addr_by_screen_addr_de(d) {
+    (a = d) &= 0x18;
+    asm("    rrca"); asm("    rrca"); asm("    rrca");
+    a += [(ZX_SCREEN_BEG + ZX_SCREEN_LEN)/0x100];
+    d = a;
+}
