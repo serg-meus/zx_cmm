@@ -6,6 +6,19 @@ from preprocessor import process_file, connect_lines, split_text
 
 auto_replace_jp_to_jr = True
 
+replaces = {
+    r'ld\s+a,\s+0': 'sub  a',
+    r'dec\s+b\n\s+j[rp]\s+nz,\s+(\w+)': r'djnz \1',
+    r'call\s+(\w+)\n\s+ret': r'jp  \1',
+    r'\s+jp\s+(\w+)\n\1:': r'\n\1:',
+    r'xor\s+255': 'cpl',
+    r'ld\s+d,\s+(\d+)\s+ld\s+e,\s+(\d+)': r'ld de, 256*\1 + \2',
+    r'ld\s+e,\s+(\d+)\s+ld\s+d,\s+(\d+)': r'ld de, 256*\2 + \1',
+    r'ld\s+h,\s+(\d+)\s+ld\s+l,\s+(\d+)': r'ld hl, 256*\1 + \2',
+    r'ld\s+l,\s+(\d+)\s+ld\s+h,\s+(\d+)': r'ld hl, 256*\2 + \1',
+    r'ld\s+b,\s+(\d+)\s+ld\s+c,\s+(\d+)': r'ld bc, 256*\1 + \2',
+    r'ld\s+c,\s+(\d+)\s+ld\s+b,\s+(\d+)': r'ld bc, 256*\2 + \1',
+    }
 
 def optimize_z80_asm(lines):
     lines = strip_comments(lines)
@@ -210,11 +223,6 @@ def replace_jr_to_jp(lines, repl):
 
 
 def replace_instructions(lines):
-    replaces = {r'ld\s+a,\s+0': 'sub  a',
-                r'dec\s+b\n\s+j[rp]\s+nz,\s+(\w+)': r'djnz \1',
-                r'call\s+(\w+)\n\s+ret': r'jp  \1',
-                r'\s+jp\s+(\w+)\n\1:': r'\n\1:',
-                r'xor\s+255': 'cpl'}
     if auto_replace_jp_to_jr:
         replaces[r'jp\s+(l\d+)'] = r'IF \1 - $ < 127\n        jr \1\n' + \
             r'    ELSE\n        jp \1\n    ENDIF'
