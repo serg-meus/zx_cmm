@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 
+
 from sys import argv
 import os
 from re import sub
+
 
 flags_inv = {'z': 'nz', 'nz': 'z', 'c': 'nc', 'nc': 'c', 'p': 'm', 'm': 'p',
              'pe': 'po', 'po': 'pe'}
@@ -53,6 +55,7 @@ def preprocessor(lines):
 
 
 def format_code(lines):
+    lines = format_carriage_return(lines)
     lines = split_by_semicolon(lines)
     lines = format_braces(lines)
     # lines = format_indent(lines)
@@ -115,7 +118,18 @@ def find_signifficant_symbols(line, symbols):
     return pos
 
 
-def format_function_args(lines):
+def format_carriage_return(lines):
+    lines_to_delete = []
+    for i, line in enumerate(lines):
+        st = line.split('//')[0].strip()
+        if i == 0 or not st or lines[i - 1].rstrip().endswith('\\') or \
+                st.startswith(('#', '{', 'void', 'bool', '//')) or \
+                st.endswith((';', '{', '}')):
+            continue
+        lines_to_delete.append(i + 1)
+    for i in sorted(lines_to_delete, reverse=True):
+        lines[i - 1] = lines[i - 1].rstrip() + ' ' + lines[i].lstrip()
+        del(lines[i])
     return lines
 
 
@@ -531,7 +545,7 @@ def function_defs(lines):
     ans = {}
     for line in lines:
         splt = line.strip().split()
-        if len(splt) == 0 or splt[0] != 'void':
+        if len(splt) == 0 or splt[0] not in ('void', 'bool'):
             continue
         ans[splt[1].split('(')[0]] = func_arg_registers(''.join(splt[1:]))
     return ans
