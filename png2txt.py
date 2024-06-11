@@ -28,7 +28,7 @@ def main(in_file, spr_width, spr_height, array_names, out_file):
                                      '] = {' + spr + '};\n')
                     elif i == 1:
                         out_fp.write('uint8_t ' + name + '[' + str(arr_len) +
-                                     '] = {' + spr)
+                                     '] = {' + spr + ', ')
                     elif i < sprites_per_row*sprites_per_col:
                         out_fp.write(spr + ', ')
                     else:
