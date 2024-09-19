@@ -24,3 +24,20 @@ void rrca(a) {
 void rlca(a) {
     asm("    rlca");
 }
+
+void memset(hl, bc, a) {
+    // hl - start address
+    // bc - length in bytes MINUS ONE (!)
+    // a - fill value
+    de = hl;
+    de++;
+    *hl = a;
+    ldir();
+}
+
+void memcpy(hl, de, bc) {
+    // hl - from address
+    // de - to address
+    // bc - lenght in bytes
+    ldir();
+}

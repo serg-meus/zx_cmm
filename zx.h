@@ -6,6 +6,7 @@ ZX_YELLOW, ZX_WHITE)
 
 const int ZX_SCREEN_BEG = 0x4000;
 const int ZX_SCREEN_LEN = 32*192;
+const int ZX_ATTRS_LEN = 32*24;
 const int ZX_ATTR_P = 23693;
 const int ZX_LAST_K = 23560;
 const int ZX_ERR_SP = 23613;
