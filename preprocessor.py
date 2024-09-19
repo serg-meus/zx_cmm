@@ -5,7 +5,6 @@ from sys import argv
 import os
 from re import sub
 
-
 flags_inv = {'z': 'nz', 'nz': 'z', 'c': 'nc', 'nc': 'c', 'p': 'm', 'm': 'p',
              'pe': 'po', 'po': 'pe'}
 
@@ -126,7 +125,8 @@ def format_carriage_return(lines):
                 st.startswith(('#', '{', 'void', 'bool', '//')) or \
                 st.endswith((';', '{', '}')):
             continue
-        lines_to_delete.append(i + 1)
+        if lines[i + 1].strip() not in ('break;', 'continue;'):
+            lines_to_delete.append(i + 1)
     for i in sorted(lines_to_delete, reverse=True):
         lines[i - 1] = lines[i - 1].rstrip() + ' ' + lines[i].lstrip()
         del(lines[i])
@@ -512,7 +512,7 @@ def replace_bool_func_ifs(lines, foo_data):
             foo_name = line.split('(')[1].lstrip('!')
             if foo_name in foo_data:
                 n_spaces = len(line) - len(line.lstrip()) if num > 0 else 0
-                foo_call = line.split('(', 1)[1][:-2].lstrip('!')
+                foo_call = line.split('(', 1)[1].strip()[:-1].lstrip('!')
                 reverse = line.split('(')[1].startswith('!')
                 flag = foo_data[foo_name][1]
                 if reverse:
