@@ -101,7 +101,7 @@ void screen_addr_by_char_coord_hl(hl) {
     a += h;
     h = l; l = a;
     (a = h) &= 0x18;
-    a |= [ZX_SCREEN_BEG/0x100];
+    a |= (ZX_SCREEN_BEG/0x100);
     h = a;
 }
 
@@ -114,20 +114,20 @@ void screen_addr_by_char_coord_de(de) {
     a += d;
     d = e; e = a;
     (a = d) &= 0x18;
-    a |= [ZX_SCREEN_BEG/0x100];
+    a |= (ZX_SCREEN_BEG/0x100);
     d = a;
 }
 
 void attribute_addr_by_screen_addr_hl(h) {
     (a = h) &= 0x18;
     asm("    rrca"); asm("    rrca"); asm("    rrca");
-    a += [(ZX_SCREEN_BEG + ZX_SCREEN_LEN)/0x100];
+    a += ((ZX_SCREEN_BEG + ZX_SCREEN_LEN)/0x100);
     h = a;
 }
 
 void attribute_addr_by_screen_addr_de(d) {
     (a = d) &= 0x18;
     asm("    rrca"); asm("    rrca"); asm("    rrca");
-    a += [(ZX_SCREEN_BEG + ZX_SCREEN_LEN)/0x100];
+    a += ((ZX_SCREEN_BEG + ZX_SCREEN_LEN)/0x100);
     d = a;
 }

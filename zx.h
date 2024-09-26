@@ -1,5 +1,5 @@
 #define ZX_ATTR(ink, paper, bright=0, flash=0) \
-[ink + 8*paper + 64*bright + 128*flash]
+(ink + 8*paper + 64*bright + 128*flash)
 
 #enum(ZX_BLACK = 0, ZX_BLUE, ZX_RED, ZX_MAGENTA, ZX_GREEN, ZX_CYAN, \
 ZX_YELLOW, ZX_WHITE)

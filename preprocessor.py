@@ -3,7 +3,7 @@
 
 from sys import argv
 import os
-from re import sub
+from re import sub, search
 
 flags_inv = {'z': 'nz', 'nz': 'z', 'c': 'nc', 'nc': 'c', 'p': 'm', 'm': 'p',
              'pe': 'po', 'po': 'pe'}
@@ -42,6 +42,7 @@ def write_out_file(lines, out_file):
 def preprocessor(lines):
     lines = make_includes(lines)
     lines = format_code(lines)
+    replace_brackets(lines)
     move_variables_to_end(lines)
     macro_data = collect_macrofunctions(lines)
     delete_definitions(lines)
@@ -362,6 +363,8 @@ def get_args_and_values(line):
 def fill_macro_body(line, macro):
     T = split_str(line, ' ()')
     macro.body = line.partition(')')[2].strip() if ')' in T else ''.join(T[4:])
+    if macro.body[0] == '(':
+        macro.body = '[' + macro.body[1:-1] + ']'
 
 
 def make_replaces_macro(lines, macro_data):
@@ -601,6 +604,30 @@ def move_variables_to_end(lines):
     for num in deleted_nums[::-1]:
         del(lines[num])
     lines += tail
+
+
+def replace_brackets(lines):
+    for i, line in enumerate(lines):
+        if not (res := search(r'\w+\s*[\+\-/\*&|^!]?=\s*\(', line)):
+            continue
+        pos1 = res.span()[1] - 1
+        pos2 = find_closing_bracket(line, pos1 + 1)
+        assign = ('+=', '-=', '>>=', '<<=', '&=', '|=', '^=')
+        if not any([x in line[pos1 + 1:pos2] for x in assign]):
+            line = line[:pos1] + '[' + line[pos1 + 1:]
+            lines[i] = line[:pos2] + ']' + line[pos2 + 1:]
+
+
+def find_closing_bracket(line, pos, bracket_sym='()'):
+    level = 1
+    for i, sym in enumerate(line[pos:]):
+        if sym == bracket_sym[0]:
+            level += 1
+        elif sym == bracket_sym[1]:
+            level -= 1
+            if level == 0:
+                break
+    return pos + i
 
 
 def sgn(x):
