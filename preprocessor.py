@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-
 from sys import argv
 import os
 from re import sub, search
@@ -47,7 +46,7 @@ def preprocessor(lines):
     macro_data = collect_macrofunctions(lines)
     delete_definitions(lines)
     make_replaces_macro(lines, macro_data)
-    process_bool_functions(lines)
+    process_non_void_functions(lines)
     lines = process_for_loops(lines)
     check_function_args(lines)
     lines = make_replaces_common(lines)
@@ -466,18 +465,19 @@ def partition_str(line, separators):
     return (line, None, None)
 
 
-def process_bool_functions(lines):
+def process_non_void_functions(lines):
     foo_data = collect_func_data(lines)
     replace_bool_func_ifs(lines, foo_data)
-    replace_bool_with_void(lines)
-    delete_bool_returns(lines)
+    replace_non_void_with_void(lines)
+    process_int_calls(lines, foo_data)
+    delete_non_void_returns(lines)
 
 
 def collect_func_data(lines):
     ans = {}
     for num, line in enumerate(lines):
         splt = line.split()
-        if splt == [] or splt[0] not in ('void', 'bool'):
+        if splt == [] or splt[0] not in ('void', 'bool', 'int'):
             continue
         return_type = '' if splt[0] == 'void' else get_return_type(lines, num)
         ans[splt[1].split('(')[0]] = (splt[0], return_type)
@@ -488,7 +488,7 @@ def get_return_type(lines, first_line_num):
     ans = ''
     last_num = last_line_num(lines, first_line_num)
     for i in range(last_num, first_line_num, -1):
-        splt = lines[i].split()
+        splt = lines[i].split(maxsplit=1)
         if len(splt) > 0 and splt[0] == 'return':
             ans = splt[1].split(';')[0]
     return ans
@@ -524,18 +524,37 @@ def replace_bool_func_ifs(lines, foo_data):
                     ' ' * n_spaces + 'if(flag_' + flag + ')\n'
 
 
-def replace_bool_with_void(lines):
+def replace_non_void_with_void(lines):
     for num, line in enumerate(lines):
         if line.startswith('bool'):
             lines[num] = 'void' + line[4:]
+        elif line.startswith('int'):
+            lines[num] = 'void' + line[3:]
 
 
-def delete_bool_returns(lines):
+def delete_non_void_returns(lines):
+    def all_args_are_registers():
+        return all([x.strip() in reg_pair for x in arg.split(',')])
     for num, line in enumerate(lines):
-        sp = line.split()
-        if len(sp) > 1 and sp[0] == 'return' and \
-                sp[1].split(';')[0] in flags_inv:
-            lines[num] = '\n'
+        splt = line.split()
+        if len(splt) > 1 and splt[0] == 'return':
+            arg = ' '.join(splt[1:]).split(';')[0]
+            if arg in flags_inv or all_args_are_registers():
+                lines[num] = '\n'
+
+
+def process_int_calls(lines, foo_data):
+    for fd in foo_data:
+        if foo_data[fd][0] != 'int':
+            continue
+        for i, line in enumerate(lines):
+            if fd not in line or line.strip().startswith('void'):
+                continue
+            splt = line.split('=')
+            assert (len(splt) == 2 and splt[0].strip() == foo_data[fd][1]), \
+                'Error: wrong register as return value: ' + line.lstrip()
+            num_spaces = line.count(' ', 1)
+            lines[i] = ' '*num_spaces + splt[1].strip()
 
 
 def check_function_args(lines):

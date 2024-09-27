@@ -14,11 +14,17 @@ void main()
     for b = 0: 0x07  {
         for c = 7:0:-1
         {
-            a = c; a ^= 0x0f; a <<= 3; a |= c;
+            a = get_attr(c);
             set_sys_colors(a);
             init_console();
             putchar(a='.');
         }
         putchar(a=0x0d); // '\r'
     }
+}
+
+int get_attr(c) {
+    // c - reversed symbol counter (7..0)
+    (((a = c) ^= 0x0f) <<= 3) |= c;
+    return a;
 }

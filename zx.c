@@ -70,7 +70,9 @@ void zx_sound_beep(hl, de) {
     asm("    call 949");
 }
 
-void down_hl(hl) {
+int down_hl(hl) {
+    // hl -- address on screen
+    // returns address of next screen line in hl
     h++;
     (a = h) &= 7;
     if (flag_z) {
@@ -79,9 +81,12 @@ void down_hl(hl) {
             h -= 8;
         }
     }
+    return hl;
 }
 
-void down_de(de) {
+int down_de(de) {
+    // de -- address on screen
+    // returns address of next screen line in de
     d++;
     (a = d) &= 7;
     if (flag_z) {
@@ -90,9 +95,10 @@ void down_de(de) {
             d -= 8;
         }
     }
+    return de;
 }
 
-void screen_addr_by_char_coord_hl(hl) {
+int screen_addr_by_char_coord_hl(hl) {
     // h - column number (0..31)
     // l - row number (0..23)
     // returns screen addr in hl
@@ -103,9 +109,10 @@ void screen_addr_by_char_coord_hl(hl) {
     (a = h) &= 0x18;
     a |= (ZX_SCREEN_BEG/0x100);
     h = a;
+    return hl;
 }
 
-void screen_addr_by_char_coord_de(de) {
+int screen_addr_by_char_coord_de(de) {
     // d - column number (0..31)
     // e - row number (0..23)
     // returns screen addr in de
@@ -116,18 +123,21 @@ void screen_addr_by_char_coord_de(de) {
     (a = d) &= 0x18;
     a |= (ZX_SCREEN_BEG/0x100);
     d = a;
+    return de;
 }
 
-void attribute_addr_by_screen_addr_hl(h) {
+int attribute_addr_by_screen_addr_hl(hl) {
     (a = h) &= 0x18;
     asm("    rrca"); asm("    rrca"); asm("    rrca");
     a += ((ZX_SCREEN_BEG + ZX_SCREEN_LEN)/0x100);
     h = a;
+    return hl;
 }
 
-void attribute_addr_by_screen_addr_de(d) {
+int attribute_addr_by_screen_addr_de(de) {
     (a = d) &= 0x18;
     asm("    rrca"); asm("    rrca"); asm("    rrca");
     a += ((ZX_SCREEN_BEG + ZX_SCREEN_LEN)/0x100);
     d = a;
+    return de;
 }
