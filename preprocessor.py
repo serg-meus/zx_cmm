@@ -477,7 +477,8 @@ def collect_func_data(lines):
     ans = {}
     for num, line in enumerate(lines):
         splt = line.split()
-        if splt == [] or splt[0] not in ('void', 'bool', 'int'):
+        if not splt or splt[0] not in ('void', 'bool', 'int') or \
+                splt[-1] == '=':
             continue
         return_type = '' if splt[0] == 'void' else get_return_type(lines, num)
         ans[splt[1].split('(')[0]] = (splt[0], return_type)
@@ -526,9 +527,10 @@ def replace_bool_func_ifs(lines, foo_data):
 
 def replace_non_void_with_void(lines):
     for num, line in enumerate(lines):
-        if line.startswith('bool'):
+        strp = line.strip()
+        if strp.startswith('bool') and strp[-1] == ')':
             lines[num] = 'void' + line[4:]
-        elif line.startswith('int'):
+        elif strp.startswith('int') and strp[-1] == ')':
             lines[num] = 'void' + line[3:]
 
 
